@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>躯体焦虑 · 身体信号筛查</title>
+<style>
+*{margin:0;box-sizing:border-box;}body{background:#eef3f0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.5;padding:18px 12px 28px;min-height:100vh;display:flex;flex-direction:column;justify-content:center;}.card{max-width:700px;margin:0 auto;background:#fffffff5;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-radius:28px;box-shadow:0 16px 32px -10px #1a3a2a1a,0 6px 12px -6px #0000000d;padding:24px 18px 28px;border:1px solid #d0e0d8;}h1{font-size:1.8rem;font-weight:600;color:#1e4a3a;margin-bottom:2px;display:flex;align-items:center;gap:8px;}.badge{background:#2a5e4b;color:white;font-size:0.7rem;padding:2px 10px;border-radius:30px;font-weight:500;}.subhead{font-size:0.9rem;color:#4e6b5e;margin-bottom:14px;border-left:4px solid #5a9e82;padding-left:14px;}.instruction{background:#e2f0e9;padding:12px 16px;border-radius:18px;margin:14px 0 20px;color:#1d4537;font-size:0.92rem;border:1px solid #b8d5c6;}.q-item{margin-bottom:18px;border-bottom:1px solid #d4e4dc;padding-bottom:14px;}.q-text{font-weight:550;color:#15382b;margin-bottom:10px;font-size:1rem;display:flex;align-items:baseline;}.q-num{background:#c4dfd3;color:#134431;border-radius:30px;width:24px;height:24px;text-align:center;line-height:24px;font-weight:600;font-size:0.85rem;margin-right:10px;flex-shrink:0;}.opts{display:flex;flex-wrap:wrap;gap:6px 10px;margin-left:4px;}.opt-lbl{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:0.92rem;color:#1f4a3a;background:#f6fbf8;padding:5px 10px 5px 6px;border-radius:36px;border:1.2px solid #bdd2c6;transition:all 0.12s;}.opt-lbl:has(input:checked){background:#d2eadf;border-color:#2a6e53;box-shadow:0 1px 5px #2a6e5333;}input{accent-color:#2a6e53;width:17px;height:17px;margin:0;}.actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:24px 0 8px;}.btn{padding:11px 20px;border-radius:50px;font-weight:550;font-size:0.98rem;border:1.2px solid #b2c9bc;background:white;color:#1e4a3a;cursor:pointer;box-shadow:0 2px 4px #00000008;}.btn-p{background:#1f5e47;border-color:#1f5e47;color:white;box-shadow:0 6px 12px -5px #1f5e4790;}.btn-p:hover{background:#144b38;}.result-panel{margin-top:22px;padding:18px 16px;background:#eaf3ed;border-radius:22px;border-left:6px solid #2a6e53;}.score-big{font-size:3rem;font-weight:700;color:#0e3829;line-height:1.1;}.severity{font-size:1.3rem;font-weight:600;margin:6px 0 4px;color:#174e3c;}.footnote{font-size:0.78rem;color:#3e6b58;margin-top:12px;border-top:1px dashed #aac6b8;padding-top:12px;}hr{border:none;border-top:1px solid #c8ddd2;margin:12px 0 0;}.reset-link{color:#1e6b4e;font-weight:500;text-decoration:none;font-size:0.88rem;}.flex{display:flex;align-items:baseline;gap:10px;}.symptom-cat{display:inline-block;background:#c1dbd0;font-size:0.7rem;padding:1px 8px;border-radius:20px;margin-left:8px;color:#0e3829;}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🧬 躯体焦虑量表 <span class="badge">PHQ-15+ 扩展</span></h1>
+<div class="subhead">身体反应筛查 · 过去两周</div>
+<div class="instruction">⚡ 请根据近两周身体感受选择频率。本量表关注生理症状，非心理担忧。</div>
+<form id="somaForm">
+<div id="questionsContainer"></div>
+<div class="actions">
+<button type="button" class="btn btn-p" id="calcBtn">📋 查看躯体化指数</button>
+<button type="button" class="btn" id="resetBtn">↻ 重置</button>
+</div>
+</form>
+<div id="resultArea" class="result-panel" style="display:none;">
+<div class="flex"><span class="score-big" id="totalScore">0</span><span style="font-size:1.1rem;color:#1e5e47;">/45</span></div>
+<div id="severityText" class="severity">—</div>
+<div id="interpretText" style="color:#194b39;"></div>
+<div class="footnote">
+<strong>🫀 提示</strong>：总分≥15分提示躯体症状较明显，建议排除生理疾病后评估焦虑。
+</div>
+</div>
+<hr>
+<div style="display:flex; justify-content:flex-end;"><a href="#" id="clearResultLink" class="reset-link" style="display:none;">隐藏结果</a></div>
+</div>
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 15题 · 躯体焦虑/躯体化症状量表 (基于PHQ-15扩展 + 焦虑躯体表现) ----------
+  const questions = [
+    { text: "胃痛、胃胀或腹部不适", cat: "消化" },
+    { text: "背痛、肩颈酸痛或肌肉紧张", cat: "肌肉" },
+    { text: "手臂、腿部或关节疼痛", cat: "疼痛" },
+    { text: "头痛（包括压迫感、紧箍感）", cat: "头部" },
+    { text: "胸闷、胸痛或胸部压迫感", cat: "心肺" },
+    { text: "心跳过速、心悸或心跳不规则", cat: "心肺" },
+    { text: "呼吸急促、透不过气或窒息感", cat: "呼吸" },
+    { text: "头晕、头重脚轻或站不稳", cat: "神经" },
+    { text: "疲劳感、精力不足或身体沉重", cat: "能量" },
+    { text: "入睡困难、易醒或睡眠不深", cat: "睡眠" },
+    { text: "恶心、消化不良或腹泻/便秘", cat: "消化" },
+    { text: "手脚发麻、刺痛感", cat: "神经" },
+    { text: "喉咙有异物感或吞咽不畅", cat: "咽喉" },
+    { text: "潮热、发冷或莫名出汗", cat: "自主神经" },
+    { text: "尿频、尿急或便意频繁", cat: "泌尿" }
+  ];
+
+  // 标准0-3评分 (频率)
+  const OPTIONS = [
+    { label: "没有", value: 0 },
+    { label: "偶尔", value: 1 },
+    { label: "经常", value: 2 },
+    { label: "持续", value: 3 }
+  ];
+
+  const container = document.getElementById('questionsContainer');
+  const calcBtn = document.getElementById('calcBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const resultArea = document.getElementById('resultArea');
+  const totalSpan = document.getElementById('totalScore');
+  const severityEl = document.getElementById('severityText');
+  const interpretEl = document.getElementById('interpretText');
+  const clearLink = document.getElementById('clearResultLink');
+
+  function renderQuestions() {
+    let html = '';
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const qNum = i + 1;
+      html += `<div class="q-item"><div class="q-text"><span class="q-num">${qNum}</span>${q.text}<span class="symptom-cat">${q.cat}</span></div><div class="opts" data-qindex="${i}">`;
+      for (let j = 0; j < OPTIONS.length; j++) {
+        const opt = OPTIONS[j];
+        const radioId = `q${i}_opt${j}`;
+        html += `<label class="opt-lbl"><input type="radio" name="q${i}" value="${opt.value}" id="${radioId}">${opt.label}</label>`;
+      }
+      html += `</div></div>`;
+    }
+    container.innerHTML = html;
+  }
+  renderQuestions();
+
+  function getAllRadioGroups() {
+    const groups = [];
+    for (let i = 0; i < questions.length; i++) {
+      const radios = document.getElementsByName(`q${i}`);
+      groups.push(radios);
+    }
+    return groups;
+  }
+
+  function calculateScore() {
+    const groups = getAllRadioGroups();
+    let total = 0;
+    let missingIndices = [];
+    for (let i = 0; i < groups.length; i++) {
+      const radios = groups[i];
+      let selectedValue = null;
+      for (let r of radios) {
+        if (r.checked) {
+          selectedValue = parseInt(r.value, 10);
+          break;
+        }
+      }
+      if (selectedValue === null) {
+        missingIndices.push(i + 1);
+      } else {
+        total += selectedValue;
+      }
+    }
+    return { total, missingIndices };
+  }
+
+  // 躯体症状严重度分级 (参考SSS/PHQ-15)
+  function getInterpretation(score) {
+    if (score <= 4) {
+      return { severity: '🟢 躯体症状极少', advice: '身体反应在正常波动范围，未见明显躯体化焦虑。' };
+    } else if (score >= 5 && score <= 9) {
+      return { severity: '🟡 轻度躯体症状', advice: '存在一些身体不适，可能与压力或焦虑相关，可观察调整。' };
+    } else if (score >= 10 && score <= 14) {
+      return { severity: '🟠 中度躯体化', advice: '身体不适感较突出，焦虑可能通过身体表现。建议评估压力源，必要时就医排查。' };
+    } else if (score >= 15 && score <= 21) {
+      return { severity: '🔴 中重度躯体症状', advice: '身体多处不适，焦虑躯体化可能显著。建议咨询心身科/精神科。' };
+    } else if (score >= 22) {
+      return { severity: '🔴🔴 重度躯体化', advice: '症状负荷很高，请优先排除器质性疾病，同时寻求专业心理/精神评估。' };
+    }
+    return { severity: '—', advice: '' };
+  }
+
+  function displayResult(score, missingCount, missingList) {
+    totalSpan.textContent = score;
+    const interp = getInterpretation(score);
+    severityEl.textContent = interp.severity;
+    
+    let missingNote = '';
+    if (missingCount > 0) {
+      missingNote = `<span style="display:block; margin-top:10px; color:#b3512a; font-weight:500;">⚠️ 第 ${missingList.join('、')} 题未作答，已计0分。</span>`;
+    }
+    
+    interpretEl.innerHTML = `${interp.advice}${missingNote}`;
+    resultArea.style.display = 'block';
+    clearLink.style.display = 'inline';
+  }
+
+  function hideResult() {
+    resultArea.style.display = 'none';
+    clearLink.style.display = 'none';
+  }
+
+  function resetAllRadios() {
+    const groups = getAllRadioGroups();
+    for (let radios of groups) {
+      for (let r of radios) {
+        r.checked = false;
+      }
+    }
+    hideResult();隐藏结果();
+  }
+
+  function onCalculate() {
+    const { total, missingIndices } = calculateScore();
+    displayResult(total, missingIndices.length, missingIndices);displayResult(total,missingIndices.length);
+  }
+
+  calcBtn.addEventListener('click', onCalculate);
+  resetBtn.addEventListener('click', resetAllRadios);
+  clearLink.addEventListener('click', (e) => { e.preventDefault(); hideResult(); });
+
+  hideResult();隐藏结果();
+  document.getElementById('somaForm').addEventListener('submit', (e) => e.preventDefault());document.getElementById('somaForm')addEventListener('submit', e => {e.preventDefault();});
+
+})();
+</script>
+</body>
+</html>
